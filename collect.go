@@ -32,11 +32,19 @@ type PackagesReporterBatch interface {
 	ReportFailure(system string, err error)
 }
 
-func CollectPackages(listers []SoftwarePackageLister, reporterBatch PackagesReporterBatch) error {
+func CollectPackages(listers []SoftwarePackageLister, reporterBatch PackagesReporterBatch, reportWhenNotSupported bool) error {
 	defer reporterBatch.Close()
 
 	for _, lister := range listers {
 		system := lister.PackagingSystem()
+
+		if !lister.IsSupported() {
+			if reportWhenNotSupported {
+				reporterBatch.ReportFailure(system, fmt.Errorf("package system %s is not supported", system))
+			}
+			continue
+		}
+
 		packages, err := lister.ListPackages()
 		if err != nil {
 			reporterBatch.ReportFailure(system, err)
@@ -58,6 +66,13 @@ func NewConsoleReporter() PackagesReporter {
 
 type consoleReporterBatch struct{}
 
+func (c *consoleReporter) StartBatch(timestamp time.Time) PackagesReporterBatch {
+	fmt.Printf("============================================================\n")
+	fmt.Printf("%s\n", timestamp.Format(time.RFC822))
+
+	return &consoleReporterBatch{}
+}
+
 func (c *consoleReporterBatch) Close() error {
 	// nothing needed
 	return nil
@@ -72,11 +87,4 @@ func (c *consoleReporterBatch) ReportSuccess(system string, packages []SoftwareP
 
 func (c *consoleReporterBatch) ReportFailure(system string, err error) {
 	// outer caller will log this
-}
-
-func (c *consoleReporter) StartBatch(timestamp time.Time) PackagesReporterBatch {
-	fmt.Printf("============================================================\n")
-	fmt.Printf("%s\n", timestamp.Format(time.RFC822))
-
-	return &consoleReporterBatch{}
 }

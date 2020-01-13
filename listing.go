@@ -33,6 +33,7 @@ type SoftwarePackage struct {
 
 type SoftwarePackageLister interface {
 	PackagingSystem() string
+	IsSupported() bool
 	ListPackages() ([]SoftwarePackage, error)
 }
 
@@ -48,6 +49,15 @@ type threeColumnPackageLister struct {
 	commandName     string
 	commandArgs     []string
 	logger          *zap.Logger
+}
+
+func (t *threeColumnPackageLister) IsSupported() bool {
+	_, err := exec.LookPath(t.commandName)
+	if err != nil {
+		return false
+	} else {
+		return true
+	}
 }
 
 func (t *threeColumnPackageLister) PackagingSystem() string {

@@ -62,7 +62,7 @@ func main() {
 	reporter := packagesagent.NewConsoleReporter()
 
 	if config.OneShot {
-		err := packagesagent.CollectPackages(listers, reporter.StartBatch(time.Now()))
+		err := packagesagent.CollectPackages(listers, reporter.StartBatch(time.Now()), false)
 		if err != nil {
 			logger.Error("failed to collect packages", zap.Error(err))
 			os.Exit(1)
@@ -70,7 +70,7 @@ func main() {
 	} else {
 		ticker := time.Tick(config.Interval)
 		for timestamp := range ticker {
-			err := packagesagent.CollectPackages(listers, reporter.StartBatch(timestamp))
+			err := packagesagent.CollectPackages(listers, reporter.StartBatch(timestamp), false)
 			if err != nil {
 				logger.Error("failed to collect packages", zap.Error(err))
 			}
