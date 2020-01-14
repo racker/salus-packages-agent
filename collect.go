@@ -17,7 +17,9 @@
 package packagesagent
 
 import (
+	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"io"
 	"time"
 )
@@ -55,6 +57,50 @@ func CollectPackages(listers []SoftwarePackageLister, reporterBatch PackagesRepo
 	}
 
 	return nil
+}
+
+// CollectWithConfigs will start a go routine each to periodically collect packages according
+// to each given configuration.
+func CollectWithConfigs(ctx context.Context, configs []*Config, reporter PackagesReporter, logger *zap.Logger) {
+	for _, config := range configs {
+		go collectWithConfig(ctx, config, reporter, logger)
+	}
+}
+
+// listersFromConfig is a var to allow for unit test replacement with mocks
+var listersFromConfig = func(config *Config, logger *zap.Logger) []SoftwarePackageLister {
+	var listers []SoftwarePackageLister
+	if config.IncludeDebian {
+		listers = append(listers, DebianLister(logger))
+	}
+	if config.IncludeRpm {
+		listers = append(listers, RpmLister(logger))
+	}
+	return listers
+}
+
+func collectWithConfig(ctx context.Context, config *Config, reporter PackagesReporter, logger *zap.Logger) {
+	ticker := time.NewTicker(time.Duration(config.Interval))
+
+	listers := listersFromConfig(config, logger)
+
+	for {
+		select {
+		case timestamp := <-ticker.C:
+			batch := reporter.StartBatch(timestamp)
+			err := CollectPackages(listers, batch, config.FailWhenNotSupported)
+			if err != nil {
+				logger.Error("failed to collect packages", zap.Error(err))
+			}
+			err = batch.Close()
+			if err != nil {
+				logger.Error("failed to close reporter batch", zap.Error(err))
+			}
+
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 type consoleReporter struct {

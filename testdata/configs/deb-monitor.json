@@ -1,0 +1,7 @@
+{
+  "interval": "6h",
+  "include-debian": true,
+  "include-rpm": false,
+  "extra-field": "should be ignored",
+  "fail-when-not-supported": true
+}

@@ -17,11 +17,14 @@
 package packagesagent
 
 import (
+	"context"
 	"errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"testing"
+	"time"
 )
 
 type mockPackageLister struct {
@@ -47,6 +50,15 @@ func (m *mockPackageLister) ListPackages() ([]SoftwarePackage, error) {
 	} else {
 		return pkgs.([]SoftwarePackage), args.Error(1)
 	}
+}
+
+type mockReporter struct {
+	mock.Mock
+}
+
+func (m *mockReporter) StartBatch(timestamp time.Time) PackagesReporterBatch {
+	args := m.Called(timestamp)
+	return args.Get(0).(PackagesReporterBatch)
 }
 
 type mockReporterBatch struct {
@@ -134,19 +146,19 @@ func TestCollectPackages_handleErrorInOne(t *testing.T) {
 }
 
 func TestCollectPackages_reportNotSupported(t *testing.T) {
-	lister1 := &mockPackageLister{}
-	lister1.On("PackagingSystem").Return("mock1")
-	lister1.On("IsSupported").Return(false)
+	lister := &mockPackageLister{}
+	lister.On("PackagingSystem").Return("mock1")
+	lister.On("IsSupported").Return(false)
 
 	batch := &mockReporterBatch{}
 	batch.On("ReportFailure", mock.Anything, mock.Anything)
 	batch.On("Close").Return(nil)
 
-	err := CollectPackages([]SoftwarePackageLister{lister1}, batch, true)
+	err := CollectPackages([]SoftwarePackageLister{lister}, batch, true)
 	// outer call itself purposely reports no error, but reporter batch, below, will get it
 	require.NoError(t, err)
 
-	lister1.AssertExpectations(t)
+	lister.AssertExpectations(t)
 
 	batch.AssertCalled(t, "ReportFailure",
 		"mock1",
@@ -154,4 +166,57 @@ func TestCollectPackages_reportNotSupported(t *testing.T) {
 			return err.Error() == "package system mock1 is not supported"
 		}),
 	)
+}
+
+func TestCollectWithConfigs(t *testing.T) {
+	lister := &mockPackageLister{}
+	lister.On("PackagingSystem").Return("mock1")
+	lister.On("IsSupported").Return(true)
+	packages := []SoftwarePackage{
+		{Name: "dbus", Version: "1:1.12.8-7.el8", Arch: "x86_64"},
+	}
+	lister.On("ListPackages").Return(packages, nil)
+
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	defer cancelFunc()
+
+	batchArgs := make(chan mock.Arguments, 1)
+
+	batch := &mockReporterBatch{}
+	batch.On("ReportSuccess", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		batchArgs <- args
+	})
+	batch.On("Close").Return(nil)
+
+	reporter := &mockReporter{}
+	reporter.On("StartBatch", mock.Anything).Return(batch)
+
+	processedConfigs := make(chan *Config, 1)
+	// swap out package level helper
+	listersFromConfig = func(config *Config, logger *zap.Logger) []SoftwarePackageLister {
+		processedConfigs <- config
+		return []SoftwarePackageLister{lister}
+	}
+
+	config := &Config{Interval: Interval(1 * time.Millisecond)}
+	CollectWithConfigs(ctx, []*Config{config}, reporter, zap.NewNop())
+
+	select {
+	case actualConfig := <-processedConfigs:
+		assert.Equal(t, config, actualConfig)
+	case <-time.After(1 * time.Second):
+		t.Fail()
+		return
+	}
+
+	select {
+	case args := <-batchArgs:
+		assert.Equal(t, "mock1", args.String(0))
+		assert.Equal(t, packages, args.Get(1))
+	case <-time.After(1 * time.Second):
+		t.Fail()
+		return
+	}
+
+	mock.AssertExpectationsForObjects(t, lister, batch, reporter)
 }

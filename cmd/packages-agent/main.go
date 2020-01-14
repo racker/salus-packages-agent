@@ -17,6 +17,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/itzg/go-flagsfiller"
 	"github.com/itzg/zapconfigs"
@@ -26,54 +27,57 @@ import (
 	"time"
 )
 
-var config struct {
-	Interval time.Duration `default:"1h"`
-	OneShot  bool
-	Debug    bool
-	Include  struct {
+var args struct {
+	Debug   bool
+	Configs string `usage:"directory containing JSON config files for continuous monitoring"`
+	Include struct {
 		Debian bool `default:"true"`
 		Rpm    bool `default:"true"`
+	}
+	LineProtocol struct {
+		ToConsole bool
+		ToSocket  string `usage:"the [host:port] of a telegraf TCP socket_listener"`
 	}
 }
 
 func main() {
-	err := flagsfiller.Parse(&config, flagsfiller.WithEnv(""))
+	err := flagsfiller.Parse(&args, flagsfiller.WithEnv(""))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
 
 	var logger *zap.Logger
-	if config.Debug {
+	if args.Debug {
 		logger = zapconfigs.NewDebugLogger()
 	} else {
 		logger = zapconfigs.NewDefaultLogger()
 	}
 
-	var listers []packagesagent.SoftwarePackageLister
-
-	if config.Include.Debian {
-		listers = append(listers, packagesagent.DebianLister(logger))
-	}
-	if config.Include.Rpm {
-		listers = append(listers, packagesagent.RpmLister(logger))
-	}
-
 	reporter := packagesagent.NewConsoleReporter()
 
-	if config.OneShot {
+	if args.Configs != "" {
+		configs, err := packagesagent.LoadConfigs(args.Configs)
+		if err != nil {
+			logger.Fatal("failed to load configs", zap.Error(err))
+		}
+
+		packagesagent.CollectWithConfigs(context.Background(), configs, reporter, logger)
+
+		// block and allow collector routines to run
+		select {}
+	} else {
+		var listers []packagesagent.SoftwarePackageLister
+		if args.Include.Debian {
+			listers = append(listers, packagesagent.DebianLister(logger))
+		}
+		if args.Include.Rpm {
+			listers = append(listers, packagesagent.RpmLister(logger))
+		}
+
 		err := packagesagent.CollectPackages(listers, reporter.StartBatch(time.Now()), false)
 		if err != nil {
-			logger.Error("failed to collect packages", zap.Error(err))
-			os.Exit(1)
-		}
-	} else {
-		ticker := time.Tick(config.Interval)
-		for timestamp := range ticker {
-			err := packagesagent.CollectPackages(listers, reporter.StartBatch(timestamp), false)
-			if err != nil {
-				logger.Error("failed to collect packages", zap.Error(err))
-			}
+			logger.Fatal("failed to collect packages", zap.Error(err))
 		}
 	}
 }

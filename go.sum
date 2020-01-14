@@ -10,6 +10,8 @@ github.com/itzg/go-flagsfiller v1.4.2 h1:aQRyQ9/ps111FZYGhzxgKYiOewE7zbAks7rxF49
 github.com/itzg/go-flagsfiller v1.4.2/go.mod h1:mfQgTahSs4OHn8PYev2Wwi1LJXUiYiGuZVCpBLxzbYs=
 github.com/itzg/zapconfigs v0.1.0 h1:Gokocm8VaTNnZjvIiVA5NEhzZ1v7lEyXY/AbeBmq6YQ=
 github.com/itzg/zapconfigs v0.1.0/go.mod h1:y4dArgRUOFbGRkUNJ8XSSw98FGn03wtkvMPy+OSA5Rc=
+github.com/karrick/godirwalk v1.14.0 h1:FFk1V9N1Qke8Iv4o6uBQK8HJ6slYM3uSL8tPkiBH8+M=
+github.com/karrick/godirwalk v1.14.0/go.mod h1:H5KPZjojv4lE+QYImBI8xVtrBRgYrIVsaRPx4tDPEn4=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
