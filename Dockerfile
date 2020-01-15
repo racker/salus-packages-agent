@@ -10,6 +10,5 @@ RUN make build
 
 FROM ubuntu:18.04
 
+ENTRYPOINT ["/usr/bin/salus-packages-agent"]
 COPY --from=builder /build/salus-packages-agent /usr/bin/
-RUN /usr/bin/salus-packages-agent
-RUN /usr/bin/salus-packages-agent --line-protocol-to-console

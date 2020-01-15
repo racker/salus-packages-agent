@@ -73,17 +73,39 @@ packages,system=rpm,package=libselinux,arch=x86_64 version="2.8-6.el8" 113621424
 Docker can be used to build and run the example even when you don't have one of the supported package managers (Debian, RPM) installed on your host system:
 
 ```
-docker build -f Dockerfile.example .
-```
-
-If you have `make`, you can instead use
-
-```
 make example
 ```
 
 The command above will 
 - exercise the unit tests, 
-- build an executable, -
+- build a local image base on Ubuntu with the executable,
 - run the agent in a "one shot" manner reporting the packages installed (in the ubuntu container) in a human-readable format
 - run the agent again using the line protocol format reporting to stdout
+
+## Running an integration test with telegraf
+
+A Docker compose file is provided to run a build and integration test with a telegraf container using a socket_listener input plugin. The following command will start the test and Control-C to stop the containers.
+
+```
+docker-compose up
+```
+
+The configuration file used is located in [testdata/compose-configs](testdata/compose-configs) and instructs the agent to re-collect every 1 minute; however, you will see output such as the following shortly after startup since the interval kicks in after the first collection.
+
+```
+telegraf_1  | 2020-01-15T17:45:53Z I! Starting Telegraf 1.13.1
+telegraf_1  | 2020-01-15T17:45:53Z I! Using config file: /etc/telegraf/telegraf.conf
+telegraf_1  | 2020-01-15T17:45:53Z I! Loaded inputs: socket_listener
+telegraf_1  | 2020-01-15T17:45:53Z I! Loaded aggregators:
+telegraf_1  | 2020-01-15T17:45:53Z I! Loaded processors:
+telegraf_1  | 2020-01-15T17:45:53Z I! Loaded outputs: file
+telegraf_1  | 2020-01-15T17:45:53Z I! Tags enabled: host=40fa37e3c964
+telegraf_1  | 2020-01-15T17:45:53Z I! [agent] Config: Interval:10s, Quiet:false, Hostname:"40fa37e3c964", Flush Interval:10s
+telegraf_1  | 2020-01-15T17:45:53Z I! [inputs.socket_listener] Listening on tcp://[::]:8094
+sut_1       | 2020-01-15T17:45:55.493Z	DEBUG	build/lister.go:69	calling packaging tool	{"name": "dpkg-query", "args": ["--show", "--showformat", "${Package} ${Version} ${Architecture}\\n"]}
+telegraf_1  | packages,arch=amd64,host=40fa37e3c964,package=zlib1g,system=debian version="1:1.2.11.dfsg-0ubuntu2" 1579110355492834600
+telegraf_1  | packages,arch=amd64,host=40fa37e3c964,package=util-linux,system=debian version="2.31.1-0.4ubuntu3.4" 1579110355492834600
+telegraf_1  | packages,arch=all,host=40fa37e3c964,package=ubuntu-keyring,system=debian version="2018.09.18.1~18.04.0" 1579110355492834600
+telegraf_1  | packages,arch=amd64,host=40fa37e3c964,package=tar,system=debian version="1.29b-2ubuntu0.1" 1579110355492834600
+telegraf_1  | packages,arch=amd64,host=40fa37e3c964,package=sysvinit-utils,system=debian version="2.88dsf-59.10ubuntu1" 1579110355492834600
+```

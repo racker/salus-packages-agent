@@ -1,0 +1,6 @@
+{
+  "interval": "1m",
+  "include-debian": true,
+  "include-rpm": false,
+  "fail-when-not-supported": true
+}

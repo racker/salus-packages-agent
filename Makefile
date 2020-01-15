@@ -14,9 +14,15 @@ clean:
 test:
 	go test ./...
 
+.PHONY: integration-test
+integration-test:
+	docker-compose up
+
 .PHONY: example
 example:
-	docker build -f Dockerfile.example .
+	docker build -t salus-packages-agent .
+	docker run --rm salus-packages-agent
+	docker run --rm salus-packages-agent --line-protocol-to-console
 
 .PHONY: release-snapshot
 release-snapshot:
