@@ -24,6 +24,10 @@ import (
 	"time"
 )
 
+var (
+	initialCollectionDelay = 1 * time.Second
+)
+
 type PackagesReporter interface {
 	StartBatch(timestamp time.Time) PackagesReporterBatch
 }
@@ -80,23 +84,29 @@ var listersFromConfig = func(config *Config, logger *zap.Logger) []SoftwarePacka
 }
 
 func collectWithConfig(ctx context.Context, config *Config, reporter PackagesReporter, logger *zap.Logger) {
+	initialDelayChan := time.After(initialCollectionDelay)
 	ticker := time.NewTicker(time.Duration(config.Interval))
 
 	listers := listersFromConfig(config, logger)
 
+	handleTick := func(timestamp time.Time) {
+		batch := reporter.StartBatch(timestamp)
+		err := CollectPackages(listers, batch, config.FailWhenNotSupported)
+		if err != nil {
+			logger.Error("failed to collect packages", zap.Error(err))
+		}
+		err = batch.Close()
+		if err != nil {
+			logger.Error("failed to close reporter batch", zap.Error(err))
+		}
+	}
+
 	for {
 		select {
+		case timestamp := <-initialDelayChan:
+			handleTick(timestamp)
 		case timestamp := <-ticker.C:
-			batch := reporter.StartBatch(timestamp)
-			err := CollectPackages(listers, batch, config.FailWhenNotSupported)
-			if err != nil {
-				logger.Error("failed to collect packages", zap.Error(err))
-			}
-			err = batch.Close()
-			if err != nil {
-				logger.Error("failed to close reporter batch", zap.Error(err))
-			}
-
+			handleTick(timestamp)
 		case <-ctx.Done():
 			return
 		}
@@ -120,14 +130,14 @@ func (c *consoleReporter) StartBatch(timestamp time.Time) PackagesReporterBatch 
 }
 
 func (c *consoleReporterBatch) Close() error {
-	// nothing needed
+	fmt.Printf("============================================================\n")
 	return nil
 }
 
 func (c *consoleReporterBatch) ReportSuccess(system string, packages []SoftwarePackage) {
-	fmt.Printf("-- %s -----------------------\n", system)
+	fmt.Printf("-- %s --------------------------------------------------\n", system)
 	for _, p := range packages {
-		fmt.Printf("%v\n", p)
+		fmt.Printf("%-20s %-25s %s\n", p.Name, p.Version, p.Arch)
 	}
 }
 

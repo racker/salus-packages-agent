@@ -6,8 +6,12 @@ github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/google/renameio v0.1.0/go.mod h1:KWCgfxg9yswjAJkECMjeO8J8rahYeXnNhOm40UhjYkI=
 github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334 h1:VHgatEHNcBFEB7inlalqfNqw65aNkM1lGX2yt3NmbS8=
 github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334/go.mod h1:SK73tn/9oHe+/Y0h39VT4UCxmurVJkR5NA7kMEAOgSE=
+github.com/influxdata/line-protocol v0.0.0-20190509173118-5712a8124a9a h1:p2OJKXyrNEo7OefeU+JNp1dpCOZJ8AOpJScpNK/MGDI=
+github.com/influxdata/line-protocol v0.0.0-20190509173118-5712a8124a9a/go.mod h1:4kt73NQhadE3daL3WhR5EJ/J2ocX0PZzwxQ0gXJ7oFE=
 github.com/itzg/go-flagsfiller v1.4.2 h1:aQRyQ9/ps111FZYGhzxgKYiOewE7zbAks7rxF49Qlm8=
 github.com/itzg/go-flagsfiller v1.4.2/go.mod h1:mfQgTahSs4OHn8PYev2Wwi1LJXUiYiGuZVCpBLxzbYs=
+github.com/itzg/line-protocol-sender v0.1.1 h1:UA01VBt3/whRxpwO425w60pdNmgjnGV1tseR4qh6mC0=
+github.com/itzg/line-protocol-sender v0.1.1/go.mod h1:Cd948iZ7YibnGcLt5D/11RfKmteh8lQyXpGUbY97WBw=
 github.com/itzg/zapconfigs v0.1.0 h1:Gokocm8VaTNnZjvIiVA5NEhzZ1v7lEyXY/AbeBmq6YQ=
 github.com/itzg/zapconfigs v0.1.0/go.mod h1:y4dArgRUOFbGRkUNJ8XSSw98FGn03wtkvMPy+OSA5Rc=
 github.com/karrick/godirwalk v1.14.0 h1:FFk1V9N1Qke8Iv4o6uBQK8HJ6slYM3uSL8tPkiBH8+M=

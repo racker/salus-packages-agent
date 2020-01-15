@@ -28,11 +28,11 @@ import (
 )
 
 var args struct {
-	Debug   bool
-	Configs string `usage:"directory containing JSON config files for continuous monitoring"`
+	Debug   bool   `usage:"enables debug logging"`
+	Configs string `usage:"directory containing config files to define continuous monitoring"`
 	Include struct {
-		Debian bool `default:"true"`
-		Rpm    bool `default:"true"`
+		Debian bool `default:"true" usage:"enables debian package listing, when not using configs"`
+		Rpm    bool `default:"true" usage:"enables rpm package listing, when not using configs"`
 	}
 	LineProtocol struct {
 		ToConsole bool
@@ -53,8 +53,16 @@ func main() {
 	} else {
 		logger = zapconfigs.NewDefaultLogger()
 	}
+	defer logger.Sync()
 
-	reporter := packagesagent.NewConsoleReporter()
+	var reporter packagesagent.PackagesReporter
+
+	if args.LineProtocol.ToConsole {
+		reporter = packagesagent.NewLineProtocolConsoleReporter(logger)
+	} else {
+		// fallback to console reporter for humans
+		reporter = packagesagent.NewConsoleReporter()
+	}
 
 	if args.Configs != "" {
 		configs, err := packagesagent.LoadConfigs(args.Configs)

@@ -1,0 +1,16 @@
+FROM golang:1.13 as builder
+
+WORKDIR /build
+
+COPY go.mod go.sum /build/
+RUN go mod download
+
+COPY . .
+RUN go test ./...
+RUN go build ./cmd/packages-agent
+
+FROM ubuntu:18.04
+
+COPY --from=builder /build/packages-agent /usr/bin/
+RUN /usr/bin/packages-agent
+RUN /usr/bin/packages-agent --line-protocol-to-console

@@ -198,7 +198,11 @@ func TestCollectWithConfigs(t *testing.T) {
 		return []SoftwarePackageLister{lister}
 	}
 
-	config := &Config{Interval: Interval(1 * time.Millisecond)}
+	// set the initial delay extremely short for unit testing purposes
+	initialCollectionDelay = 1 * time.Millisecond
+	config := &Config{Interval: Interval(
+		// ...and configured interval suitably long where the unit tests cancels the context long before it fires
+		1 * time.Hour)}
 	CollectWithConfigs(ctx, []*Config{config}, reporter, zap.NewNop())
 
 	select {

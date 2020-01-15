@@ -97,7 +97,7 @@ func RpmLister(logger *zap.Logger) SoftwarePackageLister {
 		packagingSystem: "rpm",
 		commandBuilder:  exec.Command,
 		commandName:     "rpm",
-		commandArgs:     []string{"--query", "--all", "--queryformat", "'%{name} %{evr} %{arch}\\n'"},
+		commandArgs:     []string{"--query", "--all", "--queryformat", "%{name} %{evr} %{arch}\\n"},
 		logger:          logger,
 	}
 }
@@ -107,7 +107,7 @@ func DebianLister(logger *zap.Logger) SoftwarePackageLister {
 		packagingSystem: "debian",
 		commandBuilder:  exec.Command,
 		commandName:     "dpkg-query",
-		commandArgs:     []string{"--show", "--showformat", "'${Package} ${Version} ${Architecture}\\n'"},
+		commandArgs:     []string{"--show", "--showformat", "${Package} ${Version} ${Architecture}\\n"},
 		logger:          logger,
 	}
 }
