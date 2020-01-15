@@ -27,24 +27,37 @@ import (
 	"time"
 )
 
+// set by goreleaser build
+var (
+	version string
+	commit  string
+	date    string
+)
+
 var args struct {
 	Debug   bool   `usage:"enables debug logging"`
-	Configs string `usage:"directory containing config files to define continuous monitoring"`
+	Version bool   `usage:"show version and exit" env:""`
+	Configs string `usage:"directory containing config files that define continuous monitoring"`
 	Include struct {
 		Debian bool `default:"true" usage:"enables debian package listing, when not using configs"`
 		Rpm    bool `default:"true" usage:"enables rpm package listing, when not using configs"`
 	}
 	LineProtocol struct {
-		ToConsole bool
+		ToConsole bool   `usage:"indicates that line-protocol lines should be output to stdout"`
 		ToSocket  string `usage:"the [host:port] of a telegraf TCP socket_listener"`
 	}
 }
 
 func main() {
-	err := flagsfiller.Parse(&args, flagsfiller.WithEnv(""))
+	err := flagsfiller.Parse(&args, flagsfiller.WithEnv("Agent"))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
+	}
+
+	if args.Version {
+		fmt.Printf("%s (%s, %s)", version, commit, date)
+		os.Exit(0)
 	}
 
 	var logger *zap.Logger
@@ -55,10 +68,17 @@ func main() {
 	}
 	defer logger.Sync()
 
+	ctx := context.Background()
+
 	var reporter packagesagent.PackagesReporter
 
 	if args.LineProtocol.ToConsole {
 		reporter = packagesagent.NewLineProtocolConsoleReporter(logger)
+	} else if args.LineProtocol.ToSocket != "" {
+		reporter, err = packagesagent.NewLineProtocolSocketReporter(ctx, args.LineProtocol.ToSocket, logger)
+		if err != nil {
+			logger.Fatal("failed to setup line-protocol socket reporter", zap.Error(err))
+		}
 	} else {
 		// fallback to console reporter for humans
 		reporter = packagesagent.NewConsoleReporter()
@@ -70,7 +90,7 @@ func main() {
 			logger.Fatal("failed to load configs", zap.Error(err))
 		}
 
-		packagesagent.CollectWithConfigs(context.Background(), configs, reporter, logger)
+		packagesagent.CollectWithConfigs(ctx, configs, reporter, logger)
 
 		// block and allow collector routines to run
 		select {}
