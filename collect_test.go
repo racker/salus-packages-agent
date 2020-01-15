@@ -97,7 +97,6 @@ func TestCollectPackages_success(t *testing.T) {
 
 	batch := &mockReporterBatch{}
 	batch.On("ReportSuccess", mock.Anything, mock.Anything)
-	batch.On("Close").Return(nil)
 
 	err := CollectPackages([]SoftwarePackageLister{lister1, lister2}, batch, false)
 	require.NoError(t, err)
@@ -128,7 +127,6 @@ func TestCollectPackages_handleErrorInOne(t *testing.T) {
 	batch := &mockReporterBatch{}
 	batch.On("ReportSuccess", mock.Anything, mock.Anything)
 	batch.On("ReportFailure", mock.Anything, mock.Anything)
-	batch.On("Close").Return(nil)
 
 	err := CollectPackages([]SoftwarePackageLister{lister1, lister2}, batch, false)
 	// this one propagates the error since the package manager was supposed to be supported here
@@ -152,7 +150,6 @@ func TestCollectPackages_reportNotSupported(t *testing.T) {
 
 	batch := &mockReporterBatch{}
 	batch.On("ReportFailure", mock.Anything, mock.Anything)
-	batch.On("Close").Return(nil)
 
 	err := CollectPackages([]SoftwarePackageLister{lister}, batch, true)
 	// outer call itself purposely reports no error, but reporter batch, below, will get it

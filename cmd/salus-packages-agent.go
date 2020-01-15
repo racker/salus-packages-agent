@@ -103,7 +103,14 @@ func main() {
 			listers = append(listers, packagesagent.RpmLister(logger))
 		}
 
-		err := packagesagent.CollectPackages(listers, reporter.StartBatch(time.Now()), false)
+		batch := reporter.StartBatch(time.Now())
+		defer func() {
+			closeErr := batch.Close()
+			if closeErr != nil {
+				logger.Error("failed to close reporter batch", zap.Error(err))
+			}
+		}()
+		err := packagesagent.CollectPackages(listers, batch, false)
 		if err != nil {
 			logger.Fatal("failed to collect packages", zap.Error(err))
 		}

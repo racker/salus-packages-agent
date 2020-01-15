@@ -39,8 +39,6 @@ type PackagesReporterBatch interface {
 }
 
 func CollectPackages(listers []SoftwarePackageLister, reporterBatch PackagesReporterBatch, reportWhenNotSupported bool) error {
-	defer reporterBatch.Close()
-
 	for _, lister := range listers {
 		system := lister.PackagingSystem()
 
