@@ -7,10 +7,10 @@ RUN go mod download
 
 COPY . .
 RUN go test ./...
-RUN go build ./cmd/packages-agent
+RUN go build ./cmd/salus-packages-agent.go
 
 FROM ubuntu:18.04
 
-COPY --from=builder /build/packages-agent /usr/bin/
-RUN /usr/bin/packages-agent
-RUN /usr/bin/packages-agent --line-protocol-to-console
+COPY --from=builder /build/salus-packages-agent /usr/bin/
+RUN /usr/bin/salus-packages-agent
+RUN /usr/bin/salus-packages-agent --line-protocol-to-console
