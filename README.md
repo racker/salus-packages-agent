@@ -21,6 +21,8 @@ where:
 
 ## Influx Line Protocol Modes
 
+This agent supports reporting package telemetry in the form of [InfluxDB line protocol](https://docs.influxdata.com/influxdb/v1.7/write_protocols/line_protocol_tutorial/).
+
 ### Console
 
 When using `--line-protocol-to-console`, Influx line protocol metrics will be written to stdout with a "> " prefix, such as:
@@ -33,6 +35,15 @@ When using `--line-protocol-to-console`, Influx line protocol metrics will be wr
 > packages,system=debian,package=util-linux,arch=amd64 version="2.31.1-0.4ubuntu3.4" 1579042018775063900
 > packages,system=debian,package=zlib1g,arch=amd64 version="1:1.2.11.dfsg-0ubuntu2" 1579042018775063900
 ```
+
+### Socket
+
+When using `--line-protocol-to-scoket`, Influx line protocol metrics will be sent to a remote endpoint, such as [telegraf's socket_listener with `data_format="influx"`](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/socket_listener). The lines sent would look like:
+
+```
+packages,system=rpm,package=tzdata,arch=noarch version="2019a-1.el8" 1136214245000000000
+packages,system=rpm,package=libselinux,arch=x86_64 version="2.8-6.el8" 1136214245000000000
+``` 
 
 ## Running an example via Docker
 

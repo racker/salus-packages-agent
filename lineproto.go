@@ -18,6 +18,7 @@ package packagesagent
 
 import (
 	"bytes"
+	"context"
 	protocol "github.com/influxdata/line-protocol"
 	lpsender "github.com/itzg/line-protocol-sender"
 	"go.uber.org/zap"
@@ -35,8 +36,11 @@ const (
 	LpVersionField           = "version"
 	LpErrorField             = "error"
 
-	// follow the pattern of telegraf's --test option and use their same prefix
-	LpOutPrefix = "> "
+	// Follow the pattern of telegraf's --test option and use their same prefix
+	// It allows Envoy to differentiate metric lines from logs, etc in consuming of stdout
+	LpOutPrefix          = "> "
+	LpSenderBatchSize    = 500
+	LpSenderBatchTimeout = 10 * time.Second
 )
 
 func NewLineProtocolConsoleReporter(logger *zap.Logger) PackagesReporter {
@@ -90,13 +94,64 @@ func (l *lineProtocolConsoleBatch) writeMetric(buf *bytes.Buffer, metric *lpsend
 }
 
 func (l *lineProtocolConsoleBatch) ReportFailure(system string, err error) {
-	metric := lpsender.NewSimpleMetric(LpMeasurementFailureName)
-	metric.SetTime(l.timestamp)
-	metric.AddTag(LpSystemTag, system)
-	metric.AddField(LpErrorField, err.Error())
+	metric := buildLineProtocolFailureMetric(l.timestamp, system, err)
 
 	var buf bytes.Buffer
 	l.writeMetric(&buf, metric)
+}
+
+type lineProtocolSocketReporter struct {
+	logger *zap.Logger
+	client lpsender.Client
+}
+
+func NewLineProtocolSocketReporter(ctx context.Context, endpoint string, logger *zap.Logger) (PackagesReporter, error) {
+	client, err := lpsender.NewClient(ctx, lpsender.Config{
+		Endpoint:     endpoint,
+		BatchSize:    LpSenderBatchSize,
+		BatchTimeout: LpSenderBatchTimeout,
+		ErrorListener: func(err error) {
+			logger.Error("failed to send line protocol metrics",
+				zap.Error(err), zap.String("endpoint", endpoint))
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &lineProtocolSocketReporter{
+		logger: logger,
+		client: client,
+	}, nil
+}
+
+func (l *lineProtocolSocketReporter) StartBatch(timestamp time.Time) PackagesReporterBatch {
+	return &lineProtocolSocketBatch{
+		timestamp: timestamp,
+		client:    l.client,
+	}
+}
+
+type lineProtocolSocketBatch struct {
+	timestamp time.Time
+	client    lpsender.Client
+}
+
+func (l *lineProtocolSocketBatch) Close() error {
+	l.client.Flush()
+	return nil
+}
+
+func (l *lineProtocolSocketBatch) ReportSuccess(system string, packages []SoftwarePackage) {
+	metrics := buildLineProtocolMetrics(l.timestamp, system, packages)
+	for _, metric := range metrics {
+		l.client.Send(metric)
+	}
+}
+
+func (l *lineProtocolSocketBatch) ReportFailure(system string, err error) {
+	metric := buildLineProtocolFailureMetric(l.timestamp, system, err)
+	l.client.Send(metric)
 }
 
 func buildLineProtocolMetrics(timestamp time.Time, system string, packages []SoftwarePackage) []*lpsender.SimpleMetric {
@@ -114,4 +169,12 @@ func buildLineProtocolMetrics(timestamp time.Time, system string, packages []Sof
 	}
 
 	return metrics
+}
+
+func buildLineProtocolFailureMetric(timestamp time.Time, system string, err error) *lpsender.SimpleMetric {
+	metric := lpsender.NewSimpleMetric(LpMeasurementFailureName)
+	metric.SetTime(timestamp)
+	metric.AddTag(LpSystemTag, system)
+	metric.AddField(LpErrorField, err.Error())
+	return metric
 }
