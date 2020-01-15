@@ -1,5 +1,28 @@
 Provides an agent that gathers the installed software packages reports to monitoring systems such as telegraf.
 
+## Usage
+
+```
+  -configs string
+    	directory containing config files that define continuous monitoring (env AGENT_CONFIGS)
+  -debug
+    	enables debug logging (env AGENT_DEBUG)
+  -include-debian
+    	enables debian package listing, when not using configs (env AGENT_INCLUDE_DEBIAN) (default true)
+  -include-rpm
+    	enables rpm package listing, when not using configs (env AGENT_INCLUDE_RPM) (default true)
+  -line-protocol-to-console
+    	indicates that line-protocol lines should be output to stdout (env AGENT_LINE_PROTOCOL_TO_CONSOLE)
+  -line-protocol-to-socket host:port
+    	the host:port of a telegraf TCP socket_listener (env AGENT_LINE_PROTOCOL_TO_SOCKET)
+  -version
+    	show version and exit
+```
+
+When invoked without configs the agent will collect packages, report in the configured manner, and exit.
+
+When no specific reporter options are given, the collected package info is output in a human-readable format.
+
 ## Continuous-Monitoring Config File Format
 
 When running the agent with the `--configs` option, it will periodically collect package telemetry at the interval configured in each config file. The option specifies a directory where any files in that directory that have a name ending with ".json" will be processed. The structure of those JSON files is:
@@ -51,6 +74,12 @@ Docker can be used to build and run the example even when you don't have one of 
 
 ```
 docker build -f Dockerfile.example .
+```
+
+If you have `make`, you can instead use
+
+```
+make example
 ```
 
 The command above will 

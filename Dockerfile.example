@@ -6,8 +6,7 @@ COPY go.mod go.sum /build/
 RUN go mod download
 
 COPY . .
-RUN go test ./...
-RUN go build ./cmd/salus-packages-agent.go
+RUN make build
 
 FROM ubuntu:18.04
 
