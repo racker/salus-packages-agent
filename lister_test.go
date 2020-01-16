@@ -44,7 +44,9 @@ func mockCommandBuilder(commandName string, arg ...string) *exec.Cmd {
 }
 
 // TestMockCommandHelper isn't a real test, but instead follows the pattern of the exec package's
-// unit testing with TestHelperProcess
+// unit testing with TestHelperProcess.
+// This article provides more background about the technique
+// https://npf.io/2015/06/testing-exec-command/
 func TestMockCommandHelper(*testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		// skip during top level unit test execution
