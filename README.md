@@ -1,4 +1,4 @@
-Provides an agent that gathers the installed software packages reports to monitoring systems such as telegraf.
+Provides an agent that gathers the installed software packages reports to monitoring systems such as Salus.
 
 ## Usage
 
@@ -61,7 +61,9 @@ When using `--line-protocol-to-console`, Influx line protocol metrics will be wr
 
 ### Socket
 
-When using `--line-protocol-to-scoket`, Influx line protocol metrics will be sent to a remote endpoint, such as [telegraf's socket_listener with `data_format="influx"`](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/socket_listener). The lines sent would look like:
+When using `--line-protocol-to-scoket`, Influx line protocol metrics will be sent to a remote endpoint, such as [telegraf's socket_listener with `data_format="influx"`](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/socket_listener) or [Salus Envoy](https://github.com/racker/salus-telemetry-envoy. 
+
+Each measurement instance is sent as line delimited by a newline character (`\n`) and looks like:
 
 ```
 packages,system=rpm,package=tzdata,arch=noarch version="2019a-1.el8" 1136214245000000000
